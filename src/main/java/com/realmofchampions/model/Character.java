@@ -18,10 +18,17 @@ public abstract class Character implements Attackable {
     public String getName() { return name; }
     public int getHealth() { return health; }
     public int getMaxHealth() { return maxHealth; }
+    public int getBaseAttackPower() { return baseAttackPower; }
 
     @Override
     public void takeDamage(int damage) {
         this.health = Math.max(0, this.health - damage);
+    }
+
+    public void heal(int amount) {
+        if (amount > 0) {
+            this.health = Math.min(this.maxHealth, this.health + amount);
+        }
     }
 
     @Override

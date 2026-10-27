@@ -12,14 +12,15 @@ public class HealthPotion extends Item {
         this("Health Potion", 40);
     }
 
+    public int getHealAmount() {
+        return healAmount;
+    }
+
     @Override
     public void use(Character target) {
-        int currentHp = target.getHealth();
-        int maxHp = target.getMaxHealth();
-        int actualHeal = Math.min(healAmount, maxHp - currentHp);
-        
-        // To restore health, we apply negative damage or directly adjust health
-        target.takeDamage(-actualHeal);
+        int beforeHp = target.getHealth();
+        target.heal(healAmount);
+        int actualHeal = target.getHealth() - beforeHp;
         System.out.println(target.getName() + " used " + name + " and restored " + actualHeal + " HP!");
     }
 }

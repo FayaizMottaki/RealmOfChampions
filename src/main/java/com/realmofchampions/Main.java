@@ -24,23 +24,39 @@ public class Main {
             default -> new Warrior("Arthur");
         };
 
-        Character enemy = new Goblin("Sneaky Goblin");
+        System.out.println("\nSelect your opponent:");
+        System.out.println("1. Sneaky Goblin (Easy)");
+        System.out.println("2. Brutal Orc (Hard)");
+        System.out.print("Choice: ");
+
+        int enemyChoice = scanner.hasNextInt() ? scanner.nextInt() : 1;
+        Character enemy = (enemyChoice == 2) ? new Orc("Grom the Orc") : new Goblin("Sneaky Goblin");
+
         BattleController controller = new BattleController(hero, enemy);
+        int potionsRemaining = 2;
 
         System.out.println("\nA wild " + enemy.getName() + " appears!\n");
 
         while (controller.getCurrentState() == BattleState.HERO_TURN || controller.getCurrentState() == BattleState.ENEMY_TURN) {
             if (controller.getCurrentState() == BattleState.HERO_TURN) {
-                System.out.println("--- YOUR TURN ---");
+                System.out.println("\n--- YOUR TURN ---");
                 System.out.println(hero.getName() + " HP: " + hero.getHealth() + "/" + hero.getMaxHealth());
                 System.out.println(enemy.getName() + " HP: " + enemy.getHealth() + "/" + enemy.getMaxHealth());
                 System.out.println("1. Basic Attack");
                 System.out.println("2. Special Ability");
+                System.out.println("3. Use Health Potion (" + potionsRemaining + " left)");
                 System.out.print("Action: ");
                 int action = scanner.hasNextInt() ? scanner.nextInt() : 1;
 
                 if (action == 2) {
                     controller.executeHeroSpecial();
+                } else if (action == 3) {
+                    if (potionsRemaining > 0) {
+                        potionsRemaining--;
+                        controller.useItem(new HealthPotion());
+                    } else {
+                        System.out.println("No Health Potions remaining!");
+                    }
                 } else {
                     controller.executeHeroAttack();
                 }

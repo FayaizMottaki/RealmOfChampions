@@ -53,7 +53,7 @@ public class BattleController {
                     currentState = BattleState.ENEMY_TURN;
                 }
             } else {
-                battleLog.log(hero.getName() + " cannot use Special Ability right now!");
+                battleLog.log(hero.getName() + " cannot use Special Ability right now (on cooldown)!");
             }
         }
     }
@@ -73,9 +73,16 @@ public class BattleController {
     public void executeEnemyTurn() {
         if (currentState != BattleState.ENEMY_TURN) return;
 
-        int damage = enemy.attack();
-        hero.takeDamage(damage);
-        battleLog.log(enemy.getName() + " attacked " + hero.getName() + " for " + damage + " damage.");
+        if (enemy instanceof SpecialAbility specialEnemy && specialEnemy.canUseSpecialAbility()) {
+            int heroHpBefore = hero.getHealth();
+            specialEnemy.useSpecialAbility(hero);
+            int damageDealt = heroHpBefore - hero.getHealth();
+            battleLog.log(enemy.getName() + " used a Special Ability on " + hero.getName() + " for " + damageDealt + " damage!");
+        } else {
+            int damage = enemy.attack();
+            hero.takeDamage(damage);
+            battleLog.log(enemy.getName() + " attacked " + hero.getName() + " for " + damage + " damage.");
+        }
 
         checkBattleStatus();
         if (currentState == BattleState.ENEMY_TURN) {

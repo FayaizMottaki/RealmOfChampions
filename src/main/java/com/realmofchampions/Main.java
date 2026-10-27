@@ -2,6 +2,7 @@ package com.realmofchampions;
 
 import com.realmofchampions.controller.BattleController;
 import com.realmofchampions.model.*;
+import com.realmofchampions.model.Character;
 import java.util.Scanner;
 
 public class Main {

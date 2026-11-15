@@ -1,29 +1,33 @@
 package com.realmofchampions.ui;
 
+import com.realmofchampions.controller.BattleController;
+import com.realmofchampions.model.Character;
 import javafx.application.Application;
-import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 public class GameApp extends Application {
+    private Stage primaryStage;
 
     @Override
     public void start(Stage primaryStage) {
-        Label titleLabel = new Label("Realm of Champions");
-        titleLabel.setStyle("-fx-font-size: 26px; -fx-font-weight: bold;");
+        this.primaryStage = primaryStage;
+        this.primaryStage.setTitle("Realm of Champions");
+        showSelectionScreen();
+        this.primaryStage.show();
+    }
 
-        Label subtitleLabel = new Label("Turn-Based OOP RPG Battle Arena");
-        subtitleLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #555555;");
-
-        VBox root = new VBox(15, titleLabel, subtitleLabel);
-        root.setAlignment(Pos.CENTER);
-
-        Scene scene = new Scene(root, 700, 500);
-        primaryStage.setTitle("Realm of Champions");
+    private void showSelectionScreen() {
+        SelectionView selectionView = new SelectionView(this::startBattle);
+        Scene scene = new Scene(selectionView, 700, 520);
         primaryStage.setScene(scene);
-        primaryStage.show();
+    }
+
+    private void startBattle(Character hero, Character enemy) {
+        BattleController controller = new BattleController(hero, enemy);
+        BattleView battleView = new BattleView(controller, this::showSelectionScreen);
+        Scene scene = new Scene(battleView, 700, 520);
+        primaryStage.setScene(scene);
     }
 
     public static void main(String[] args) {

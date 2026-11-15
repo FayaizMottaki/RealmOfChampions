@@ -19,14 +19,14 @@ public class GameApp extends Application {
 
     private void showSelectionScreen() {
         SelectionView selectionView = new SelectionView(this::startBattle);
-        Scene scene = new Scene(selectionView, 700, 520);
+        Scene scene = new Scene(selectionView, 720, 560);
         primaryStage.setScene(scene);
     }
 
     private void startBattle(Character hero, Character enemy) {
         BattleController controller = new BattleController(hero, enemy);
         BattleView battleView = new BattleView(controller, this::showSelectionScreen);
-        Scene scene = new Scene(battleView, 700, 520);
+        Scene scene = new Scene(battleView, 720, 560);
         primaryStage.setScene(scene);
     }
 

@@ -17,6 +17,7 @@ import javafx.scene.layout.VBox;
 public class BattleView extends VBox {
     private final BattleController controller;
     private final Runnable onPlayAgain;
+    private final ArenaCanvas arenaCanvas;
 
     private final Label heroHpLabel;
     private final ProgressBar heroHpBar;
@@ -30,38 +31,42 @@ public class BattleView extends VBox {
     private final Button restartBtn;
     private final TextArea logArea;
 
+    private boolean isAnimating = false;
+
     public BattleView(BattleController controller, Runnable onPlayAgain) {
         this.controller = controller;
         this.onPlayAgain = onPlayAgain;
 
-        setSpacing(15);
-        setPadding(new Insets(20));
+        setSpacing(12);
+        setPadding(new Insets(16));
         setAlignment(Pos.CENTER);
 
         Character hero = controller.getHero();
         Character enemy = controller.getEnemy();
 
         Label heroNameLabel = new Label("Hero: " + hero.getName());
-        heroNameLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+        heroNameLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold;");
         heroHpLabel = new Label();
         heroHpBar = new ProgressBar(1.0);
         heroHpBar.setPrefWidth(220);
-        VBox heroBox = new VBox(5, heroNameLabel, heroHpLabel, heroHpBar);
+        VBox heroBox = new VBox(4, heroNameLabel, heroHpLabel, heroHpBar);
         heroBox.setAlignment(Pos.CENTER);
 
         Label enemyNameLabel = new Label("Enemy: " + enemy.getName());
-        enemyNameLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+        enemyNameLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold;");
         enemyHpLabel = new Label();
         enemyHpBar = new ProgressBar(1.0);
         enemyHpBar.setPrefWidth(220);
-        VBox enemyBox = new VBox(5, enemyNameLabel, enemyHpLabel, enemyHpBar);
+        VBox enemyBox = new VBox(4, enemyNameLabel, enemyHpLabel, enemyHpBar);
         enemyBox.setAlignment(Pos.CENTER);
 
         HBox fightersBox = new HBox(40, heroBox, enemyBox);
         fightersBox.setAlignment(Pos.CENTER);
 
+        arenaCanvas = new ArenaCanvas(hero, enemy);
+
         statusLabel = new Label("Your Turn!");
-        statusLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold;");
+        statusLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
 
         attackBtn = new Button("Basic Attack");
         specialBtn = new Button("Special Ability");
@@ -69,14 +74,9 @@ public class BattleView extends VBox {
         restartBtn = new Button("Play Again");
         restartBtn.setVisible(false);
 
-        attackBtn.setOnAction(e -> handlePlayerAction(() -> controller.executeHeroAttack()));
-        specialBtn.setOnAction(e -> handlePlayerAction(() -> controller.executeHeroSpecial()));
-        potionBtn.setOnAction(e -> handlePlayerAction(() -> {
-            if (hero.hasItems()) {
-                Item potion = hero.getInventory().get(0);
-                controller.useItem(potion);
-            }
-        }));
+        attackBtn.setOnAction(e -> performAttack(false));
+        specialBtn.setOnAction(e -> performAttack(true));
+        potionBtn.setOnAction(e -> performHeal());
         restartBtn.setOnAction(e -> this.onPlayAgain.run());
 
         HBox actionBox = new HBox(10, attackBtn, specialBtn, potionBtn, restartBtn);
@@ -85,20 +85,59 @@ public class BattleView extends VBox {
         logArea = new TextArea();
         logArea.setEditable(false);
         logArea.setWrapText(true);
-        logArea.setPrefHeight(200);
+        logArea.setPrefHeight(120);
 
-        getChildren().addAll(fightersBox, statusLabel, actionBox, logArea);
+        getChildren().addAll(fightersBox, arenaCanvas, statusLabel, actionBox, logArea);
         refreshUI();
     }
 
-    private void handlePlayerAction(Runnable action) {
-        if (controller.getCurrentState() != BattleState.HERO_TURN) return;
+    private void performAttack(boolean isSpecial) {
+        if (isAnimating || controller.getCurrentState() != BattleState.HERO_TURN) return;
+        isAnimating = true;
+        disableCombatButtons(true);
 
-        action.run();
-        if (controller.getCurrentState() == BattleState.ENEMY_TURN) {
-            controller.executeEnemyTurn();
+        int enemyHpBefore = controller.getEnemy().getHealth();
+        if (isSpecial) {
+            controller.executeHeroSpecial();
+        } else {
+            controller.executeHeroAttack();
         }
+        int damageDealt = enemyHpBefore - controller.getEnemy().getHealth();
+
+        arenaCanvas.playHeroAttack(damageDealt, isSpecial, this::triggerEnemyTurn);
+    }
+
+    private void performHeal() {
+        if (isAnimating || controller.getCurrentState() != BattleState.HERO_TURN) return;
+        Character hero = controller.getHero();
+        if (!hero.hasItems()) return;
+
+        isAnimating = true;
+        disableCombatButtons(true);
+
+        int heroHpBefore = hero.getHealth();
+        Item potion = hero.getInventory().get(0);
+        controller.useItem(potion);
+        int healed = hero.getHealth() - heroHpBefore;
+
+        arenaCanvas.playHealEffect(healed, this::triggerEnemyTurn);
+    }
+
+    private void triggerEnemyTurn() {
         refreshUI();
+        if (controller.getCurrentState() == BattleState.ENEMY_TURN) {
+            int heroHpBefore = controller.getHero().getHealth();
+            controller.executeEnemyTurn();
+            int damageTaken = heroHpBefore - controller.getHero().getHealth();
+
+            arenaCanvas.playEnemyAttack(damageTaken, () -> {
+                isAnimating = false;
+                refreshUI();
+            });
+        } else {
+            isAnimating = false;
+            refreshUI();
+        }
     }
 
     private void refreshUI() {
@@ -111,6 +150,8 @@ public class BattleView extends VBox {
         enemyHpLabel.setText("HP: " + enemy.getHealth() + " / " + enemy.getMaxHealth());
         enemyHpBar.setProgress((double) enemy.getHealth() / enemy.getMaxHealth());
 
+        arenaCanvas.draw();
+
         int potionCount = hero.getInventory().size();
         potionBtn.setText("Use Potion (" + potionCount + ")");
 
@@ -118,6 +159,7 @@ public class BattleView extends VBox {
         for (String entry : controller.getBattleLog().getLogs()) {
             logArea.appendText(entry + "\n");
         }
+        logArea.setScrollTop(Double.MAX_VALUE);
 
         BattleState state = controller.getCurrentState();
         if (state == BattleState.VICTORY) {
@@ -128,7 +170,7 @@ public class BattleView extends VBox {
             statusLabel.setText("DEFEAT! You were slain by " + enemy.getName() + "...");
             disableCombatButtons(true);
             restartBtn.setVisible(true);
-        } else {
+        } else if (!isAnimating) {
             statusLabel.setText("Your Turn! Choose an action.");
             attackBtn.setDisable(false);
             potionBtn.setDisable(!hero.hasItems());

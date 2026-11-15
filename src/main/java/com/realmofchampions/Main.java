@@ -24,6 +24,9 @@ public class Main {
             default -> new Warrior("Arthur");
         };
 
+        hero.addItem(new HealthPotion());
+        hero.addItem(new HealthPotion());
+
         System.out.println("\nSelect your opponent:");
         System.out.println("1. Sneaky Goblin (Easy)");
         System.out.println("2. Brutal Orc (Hard)");
@@ -33,7 +36,6 @@ public class Main {
         Character enemy = (enemyChoice == 2) ? new Orc("Grom the Orc") : new Goblin("Sneaky Goblin");
 
         BattleController controller = new BattleController(hero, enemy);
-        int potionsRemaining = 2;
 
         System.out.println("\nA wild " + enemy.getName() + " appears!\n");
 
@@ -44,18 +46,18 @@ public class Main {
                 System.out.println(enemy.getName() + " HP: " + enemy.getHealth() + "/" + enemy.getMaxHealth());
                 System.out.println("1. Basic Attack");
                 System.out.println("2. Special Ability");
-                System.out.println("3. Use Health Potion (" + potionsRemaining + " left)");
+                System.out.println("3. Use Health Potion (" + hero.getInventory().size() + " left)");
                 System.out.print("Action: ");
                 int action = scanner.hasNextInt() ? scanner.nextInt() : 1;
 
                 if (action == 2) {
                     controller.executeHeroSpecial();
                 } else if (action == 3) {
-                    if (potionsRemaining > 0) {
-                        potionsRemaining--;
-                        controller.useItem(new HealthPotion());
+                    if (hero.hasItems()) {
+                        Item itemToUse = hero.getInventory().get(0);
+                        controller.useItem(itemToUse);
                     } else {
-                        System.out.println("No Health Potions remaining!");
+                        System.out.println("No items left in inventory!");
                     }
                 } else {
                     controller.executeHeroAttack();

@@ -61,12 +61,16 @@ public class BattleController {
     public void useItem(Item item) {
         if (currentState != BattleState.HERO_TURN || item == null) return;
 
-        item.use(hero);
-        battleLog.log(hero.getName() + " used " + item.getName() + ".");
+        if (hero.removeItem(item)) {
+            item.use(hero);
+            battleLog.log(hero.getName() + " used " + item.getName() + ".");
 
-        checkBattleStatus();
-        if (currentState == BattleState.HERO_TURN) {
-            currentState = BattleState.ENEMY_TURN;
+            checkBattleStatus();
+            if (currentState == BattleState.HERO_TURN) {
+                currentState = BattleState.ENEMY_TURN;
+            }
+        } else {
+            battleLog.log(hero.getName() + " does not have " + item.getName() + " in inventory!");
         }
     }
 

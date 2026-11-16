@@ -19,6 +19,8 @@ public class ArenaCanvas extends Canvas {
     private double enemyOffsetX = 0;
     private boolean heroHitFlash = false;
     private boolean enemyHitFlash = false;
+    private boolean showDefeatedHeroDuringAnimation = false;
+    private boolean showDefeatedEnemyDuringAnimation = false;
 
     private double projectileX = -1;
     private Color projectileColor = Color.ORANGE;
@@ -36,6 +38,7 @@ public class ArenaCanvas extends Canvas {
     }
 
     public void playHeroAttack(int damage, boolean isSpecial, Runnable onFinished) {
+        showDefeatedEnemyDuringAnimation = !enemy.isAlive();
         Timeline timeline = new Timeline();
 
         if (isSpecial) {
@@ -52,6 +55,7 @@ public class ArenaCanvas extends Canvas {
                 }),
                 new KeyFrame(Duration.millis(480), e -> {
                     enemyHitFlash = false;
+                    showDefeatedEnemyDuringAnimation = false;
                     floatingText = "";
                     draw();
                     if (onFinished != null) onFinished.run();
@@ -69,6 +73,7 @@ public class ArenaCanvas extends Canvas {
                 new KeyFrame(Duration.millis(300), e -> { heroOffsetX = 0; draw(); }),
                 new KeyFrame(Duration.millis(480), e -> {
                     enemyHitFlash = false;
+                    showDefeatedEnemyDuringAnimation = false;
                     floatingText = "";
                     draw();
                     if (onFinished != null) onFinished.run();
@@ -79,6 +84,7 @@ public class ArenaCanvas extends Canvas {
     }
 
     public void playEnemyAttack(int damage, Runnable onFinished) {
+        showDefeatedHeroDuringAnimation = !hero.isAlive();
         Timeline timeline = new Timeline(
             new KeyFrame(Duration.millis(0), e -> { enemyOffsetX = -40; draw(); }),
             new KeyFrame(Duration.millis(100), e -> { enemyOffsetX = -180; draw(); }),
@@ -90,6 +96,7 @@ public class ArenaCanvas extends Canvas {
             new KeyFrame(Duration.millis(300), e -> { enemyOffsetX = 0; draw(); }),
             new KeyFrame(Duration.millis(480), e -> {
                 heroHitFlash = false;
+                showDefeatedHeroDuringAnimation = false;
                 floatingText = "";
                 draw();
                 if (onFinished != null) onFinished.run();
@@ -133,10 +140,10 @@ public class ArenaCanvas extends Canvas {
         gc.strokeLine(0, 155, getWidth(), 155);
 
         // Draw Hero (Left) & Enemy (Right)
-        if (hero.isAlive()) {
+        if (hero.isAlive() || showDefeatedHeroDuringAnimation) {
             drawHero(gc, 120 + heroOffsetX, 90);
         }
-        if (enemy.isAlive()) {
+        if (enemy.isAlive() || showDefeatedEnemyDuringAnimation) {
             drawEnemy(gc, 470 + enemyOffsetX, 90);
         }
 
